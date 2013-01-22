@@ -3,7 +3,7 @@ module Subst
 where
 
 import Data.Char (digitToInt, isDigit)
-import Data.List (intersperse)
+import Data.List (intercalate)
 
 
 -- (subst s ps) returns s with variabels expanded to corresponding
@@ -26,7 +26,7 @@ subst' (c:s)      ps = c : subst' s ps
 
 
 expand f ('@':s') ps = f (unwords ps) ++ subst' s' ps
-expand f ('+':s') ps = f (concat $ intersperse "+" ps) ++ subst s' ps
+expand f ('+':s') ps = f (intercalate "+" ps) ++ subst s' ps
 expand f (d:s')   ps
    | isDigit d       = f (nth (digitToInt d) ps) ++ subst' s' ps
 expand _ (c:s')   ps = c : subst' s' ps
@@ -43,7 +43,7 @@ nth n l
 
 -- Convert a string to html string
 toHtml :: String -> String
-toHtml s = concat (map html s)
+toHtml s = concatMap html s
 
 html 'Å' = "&Aring;"
 html 'Ä' = "&Auml;"

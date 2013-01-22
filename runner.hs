@@ -111,9 +111,11 @@ evHandler cfg e (Key _ _ _ _ _ _ _ _ _ (Just c)) = do
 	 editableSelectRegion e p' p
 	 return True
 
-evHandler _ _ (Key _ _ _ _ _ _ _ v n mc) = --return False
-  putStrLn ("Key [" ++ show v ++ "]\t" ++ n) >> return False
-evHandler _ _ _ = return False
+evHandler _ _ (Key _ _ _ _ _ _ _ v n mc)
+    = return False
+--  putStrLn ("Key [" ++ show v ++ "]\t" ++ n) >> return False
+evHandler _ _ _
+    = return False
 
 
 mkCommand :: Config -> String -> Command

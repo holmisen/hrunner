@@ -5,9 +5,10 @@ module PrefixTree
 ,mkDict)
 where
 
-import Data.List  (find, groupBy, isPrefixOf, stripPrefix)
-import Data.Map   (Map)
-import Data.Maybe (maybe)
+import Data.List     (find, groupBy, isPrefixOf, stripPrefix)
+import Data.Map      (Map)
+import Data.Maybe    (maybe)
+import Data.Function (on)
 
 import qualified Data.Map as Map
 
@@ -38,7 +39,7 @@ suggestAny (Words ws) = head ws
 mkDict :: Int -> [String] -> Dict
 mkDict l ws
    | l < 1     = Words ws
-   | otherwise = let gs = groupBy (\x y -> head x == head y) (filter (not . null) ws)
+   | otherwise = let gs = groupBy ((==) `on` head) (filter (not . null) ws)
                      as = map (\ws -> (head $ head ws, 
 		                       mkDict (l-1) (map tail ws))) gs
                  in Index $ Map.fromList as
