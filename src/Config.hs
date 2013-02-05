@@ -1,6 +1,7 @@
 module Config
  ( Config (..)
  , Shortcut (..)
+ , appName
  , getConfig
  , findShortcut
  , saveToHistory )
@@ -8,7 +9,6 @@ where
 
 import Data.Char     (isSpace)
 import Data.List     (find, sort)
--- import Control.Monad (liftM)
 
 import System.Directory      as Dir
 import System.FilePath.Posix as Path
@@ -28,6 +28,10 @@ data Shortcut = SC { sc_name :: String, sc_pattern :: String }
 type Line = String
 
 
+appName = "hrunner"
+getAppUserDataDir = Dir.getAppUserDataDirectory appName
+
+
 readOrCreateFile :: FilePath -> IO [Line]
 readOrCreateFile f = do
    ifM (Dir.doesFileExist f)
@@ -43,8 +47,7 @@ remComments = filter (not . comment)
 
 getConfig :: IO Config
 getConfig = do
-   home <- Dir.getHomeDirectory
-   let cfgHome = Path.combine home ".Runner"
+   cfgHome <- getAppUserDataDir
    Dir.createDirectoryIfMissing False cfgHome
    contsHist   <- readOrCreateFile (Path.combine cfgHome "history")
    contsShorts <- readOrCreateFile (Path.combine cfgHome "shortcuts")
@@ -69,7 +72,6 @@ findShortcut x = find (\sc -> x == sc_name sc)
 
 saveToHistory :: String -> IO ()
 saveToHistory s = do
-   home <- Dir.getHomeDirectory
-   let f = Path.combine (Path.combine home ".Runner") "history"
+   cfgHome <- getAppUserDataDir
+   let f = Path.combine cfgHome "history"
    appendFile f (s ++ "\n")
- 

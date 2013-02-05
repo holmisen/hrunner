@@ -1,9 +1,7 @@
 module Main where
 
-import Control.Monad    (ap, liftM, liftM2)
 import Data.Char        (isSpace)
 import Data.IORef
-import Data.List        (isPrefixOf)
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Gdk.Events -- gtk2hs 0.10
 import System.Directory (doesFileExist, executable, getPermissions)
@@ -16,7 +14,7 @@ import PrefixTree
 import Subst
 import Utils
 
-import Config (Config)
+import Config (Config, appName)
 import qualified Config
 
 
@@ -29,7 +27,6 @@ helpText = "Enter command to run.\n:\tfor shortcut.\n=\tfor expression evaluatio
 main = do
   config <- Config.getConfig
 
-  -- Setup the gui
   initGUI
   window <- windowNew
   vbox   <- vBoxNew True 5
@@ -39,7 +36,7 @@ main = do
   btnCancel <- buttonNew
   btnGo     <- buttonNew
 
-  set window [ windowTitle          := "Runner"
+  set window [ windowTitle          := appName
              , containerBorderWidth := 10
              , containerChild       := vbox
 	     , windowDefaultWidth   := 400 ]
@@ -68,7 +65,7 @@ goAction :: Config -> Entry -> IO ()
 goAction cfg e = do
    input <- entryGetText e
    case mkCommand cfg input of
-      Pass  -> entrySelectAll e
+      Pass    -> entrySelectAll e
       Run cmd -> 
         ifM (tryRunCommand cmd)
           (Config.saveToHistory (unwords $ words input) >> mainQuit)
@@ -89,12 +86,14 @@ evHandler cfg e (Key _ _ _ _ _ _ _ _ "Return" _) =
 
 evHandler cfg e (Key _ _ _ mods _ _ _ _ _ (Just 'u'))
    | Control `elem` mods = entrySetText e "" >> return True
+
 evHandler cfg e (Key _ _ _ mods _ _ _ _ _ (Just 'w'))
    | Control `elem` mods = do
       t <- entryGetText e
       entrySetText e (unwords $ init $ words t)
       editableSetPosition e (negate 1)
       return True
+
 evHandler cfg e (Key _ _ _ _ _ _ _ _ _ (Just c)) = do
    (i,j) <- editableGetSelectionBounds e
    editableDeleteText e i j
@@ -107,7 +106,6 @@ evHandler cfg e (Key _ _ _ _ _ _ _ _ _ (Just c)) = do
 	 return True
       Just suf -> do
 	 p' <- editableInsertText e suf p
--- 	 putStrLn (t ++ " + " ++ suf ++ "\t" ++ show p ++ "->" ++ show p')
 	 editableSelectRegion e p' p
 	 return True
 
@@ -132,7 +130,7 @@ mkCommand cfg = mk . words
 
 entrySelectAll :: Entry -> IO ()
 entrySelectAll e = do
-  l <- return length `ap` entryGetText e
+  l <- length `fmap` entryGetText e
   editableSelectRegion e 0 l
 
 
