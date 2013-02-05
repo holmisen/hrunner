@@ -8,14 +8,14 @@ It is made to be small, fast and simple with a minimum of dependencies.
 Oh, and it's implemented in Haskell.
 
 
-# How to use
+## How to use
 
   1. Build it and put the executable somewhere
 
-  2. Run it to create a '.hrunner' directory in '$HOME' (on Windows this
+  2. Run it to create a `.hrunner` directory in `$HOME` (on Windows this
      will go somewhere else)
   
-  3. Edit '.hrunner/shortcuts' to your liking. More on this later...
+  3. Edit `.hrunner/shortcuts` to your liking. More on this later...
 
   4. Create a desktop shortcut to the hrunner executable
      (I use Win+R in xfce and Ctrl+Alt+P in Gnome3)
@@ -23,7 +23,7 @@ Oh, and it's implemented in Haskell.
   5. Start using! Hit your shortcut and start running things.
 
 
-# Features
+## Features
 
   * Autocomple (of previous commands)
 
@@ -33,7 +33,7 @@ Oh, and it's implemented in Haskell.
   * User configurable shortcuts
 
 
-# Background
+## Background
 
 Several years ago I was running KDE 3.5 as my primary desktop. It had,
 among many other great things, a very nice application starter
@@ -62,6 +62,6 @@ very small code base, few dependencies and hence should be rather
 simple to hack on for those who like.
 
 
-# TODO
+## TODO
 
   * Add example shortcuts file(s)
