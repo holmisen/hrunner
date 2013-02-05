@@ -1,0 +1,41 @@
+# This is an example shortcuts file, suitable for the xfce desktop
+# environment.
+#
+# Add/edit the shortcuts you want, and copy this file to
+# $HOME/.hrunner/shortcuts (linux)
+#
+
+# To use shortcuts in hrunner, type ':' followed by the name of the
+# shortcut (with no spaces between) and click 'Run'.
+
+# The following variables will be expanded to the command parameters:
+#
+# '$@'  substitute all parameters
+# '$n'  substitute the n:th parameter
+# '$+'  like '$@' but with '+' as separator
+#
+# '@@'  substitute all parameters converted to html
+# '@n'  substitute the n:th parameter converted to html
+# '@+'  like '@@' but with '+' as separator
+
+
+# Search shortcuts
+gg	exo-open --launch webbrowser www.google.com/search?q=$+
+wp	exo-open --launch webbrowser http://en.wikipedia.org/w/index.php?search=$+&go=Go
+imdb	exo-open --launch webbrowser http://imdb.com/find?q=$+
+arch	exo-open --launch webbrowser http://www.archlinux.org/packages/?q=$+
+hayoo	exo-open --launch webbrowser http://holumbus.fh-wedel.de/hayoo/hayoo.html?query=$+
+
+
+# Web shortcuts
+w	exo-open --launch webbrowser $@
+gmail	exo-open --launch webbrowser www.gmail.com
+youtube exo-open --launch webbrowser www.youtube.com
+reddit	exo-open --launch webbrowser www.reddit.com
+hackage exo-open --launch webbrowser hackage.haskell.org
+
+
+# App shortcuts
+home	  thunar 
+term      xfce4-terminal
+settings  xfce4-settings-manager

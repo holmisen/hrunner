@@ -14,7 +14,7 @@ cabal-version:       >=1.8
 
 executable hrunner
   main-is:             hrunner.hs
-  -- other-modules:       
+  other-modules:       Config, PrefixTree, Subst, Utils
   hs-source-dirs:    src
   build-depends:       base ==4.6.*
                      , containers ==0.5.*
