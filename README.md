@@ -15,10 +15,11 @@ Oh, and it's implemented in Haskell.
   2. Run it to create a `.hrunner` directory in `$HOME` (on Windows this
      will go somewhere else)
   
-  3. Edit `.hrunner/shortcuts` to your liking. More on this later...
+  3. Edit `.hrunner/shortcuts` to your liking. See
+     `doc/example_shortcuts` for examples.
 
   4. Create a desktop shortcut to the hrunner executable
-     (I use Win+R in xfce and Ctrl+Alt+P in Gnome3)
+     (I use `Win+R` in xfce and `Ctrl+Alt+P` in Gnome3)
 
   5. Start using! Hit your shortcut and start running things.
 
@@ -37,7 +38,7 @@ Oh, and it's implemented in Haskell.
 
 Several years ago I was running KDE 3.5 as my primary desktop. It had,
 among many other great things, a very nice application starter
-(accessible by hitting ALT+F2). Not only did it start applications,
+(accessible by hitting `ALT+F2`). Not only did it start applications,
 but could also send text strings to web pages for searching. I don't
 remember all other things it could do.
 
