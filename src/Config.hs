@@ -33,7 +33,7 @@ getAppUserDataDir = Dir.getAppUserDataDirectory appName
 
 
 readOrCreateFile :: FilePath -> IO [Line]
-readOrCreateFile f = do
+readOrCreateFile f =
    ifM (Dir.doesFileExist f)
       (readFile f >>= return . filter (not . null) . remComments . lines)
       (writeFile f "" >> return [])
