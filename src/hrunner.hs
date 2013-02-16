@@ -39,6 +39,7 @@ main = do
   set window [ windowTitle          := appName
              , containerBorderWidth := 10
              , containerChild       := vbox
+             , windowWindowPosition := WinPosCenter
 	     , windowDefaultWidth   := 400 ]
 
   set btnCancel [ buttonLabel := "Cancel" ]
