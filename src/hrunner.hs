@@ -1,12 +1,16 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
+import Control.Monad
+import Control.Monad.IO.Class (liftIO)
 import Data.IORef
+import Data.Text (Text)
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Gdk.Events      as Ev
 import System.Directory (doesFileExist, executable, getPermissions)
 
+import qualified Data.Text             as Text
 import qualified System.FilePath.Posix as Path
 import qualified System.Process        as Sys
 
@@ -21,18 +25,25 @@ import qualified Config
 data Command = Pass | Run [String] | Calc String
 
 
-helpText = "Enter command to run.\n:\tfor shortcut.\n=\tfor expression evaluation."
+helpText = text "Enter command to run.\n:\tfor shortcut.\n=\tfor expression evaluation."
+
+
+-- For older gtk, using String instead of Text, it should be possible
+-- to make this code work by changing this to the identity function.
+text :: String -> Text
+text = Text.pack
 
 
 main = do
   config <- Config.getConfig
 
   initGUI
-  window <- windowNew
-  vbox   <- vBoxNew True 5
-  text   <- labelNew (Just helpText)
-  entry  <- entryNew
-  btnBox <- hButtonBoxNew
+
+  window    <- windowNew
+  vbox      <- vBoxNew True 5
+  label     <- labelNew (Just helpText)
+  entry     <- entryNew
+  btnBox    <- hButtonBoxNew
   btnCancel <- buttonNew
   btnGo     <- buttonNew
 
@@ -40,12 +51,12 @@ main = do
              , containerBorderWidth := 10
              , containerChild       := vbox
              , windowWindowPosition := WinPosCenter
-	     , windowDefaultWidth   := 400 ]
+             , windowDefaultWidth   := 400 ]
 
-  set btnCancel [ buttonLabel := "Cancel" ]
-  set btnGo     [ buttonLabel := "Run", widgetCanDefault := True ]
+  set btnCancel [ buttonLabel := text "Cancel" ]
+  set btnGo     [ buttonLabel := text "Run", widgetCanDefault := True ]
 
-  containerAdd vbox text
+  containerAdd vbox label
   containerAdd vbox entry
   containerAdd vbox btnBox
   containerAdd btnBox btnCancel
@@ -59,9 +70,10 @@ main = do
 
   widgetGrabDefault btnGo
 
-  onClicked btnCancel mainQuit
-  onClicked btnGo (goAction config entry)
-  onKeyPress window (evHandler config entry)
+  on btnCancel buttonActivated $ liftIO mainQuit
+  on btnGo buttonActivated $ liftIO $ goAction config entry
+  on window keyPressEvent $ tryEvent $ keyPressHandler config entry
+
   onDestroy window mainQuit
   
   widgetShowAll window
@@ -84,67 +96,57 @@ goAction cfg e = do
          entrySelectAll e
 
 
-evHandler :: Config -> Entry -> Event -> IO Bool
-evHandler _ _ (Key { Ev.eventKeyName = "Escape" }) =
-  mainQuit >> return True
+keyPressHandler cfg entry =
+  msum
+  [ do "Escape" <- eventKeyName
+       liftIO mainQuit
 
--- This should not be needed, but the default action does not seem to work.
-evHandler cfg e (Key { Ev.eventKeyName = "Return" }) = 
-  goAction cfg e >> return True
+    -- This should be taken care of by the default button, but that
+    -- does not work. I do not know why.
+  , do "Return" <- eventKeyName
+       liftIO $ goAction cfg entry
 
-evHandler _ e (Key { Ev.eventModifier = mods, Ev.eventKeyChar = Just 'u' })
-  | Control `elem` mods = entrySetText e "" >> return True
+  , do "u" <- eventKeyName
+       [Control] <- eventModifier
+       liftIO $ entrySetText entry (text "")
 
-evHandler _ e (Key { Ev.eventModifier = mods, Ev.eventKeyChar = Just 'w' })
-  | Control `elem` mods = do
-      t <- entryGetText e
-      entrySetText e (unwords $ init $ words t)
-      editableSetPosition e (negate 1)
-      return True
+  , do "w" <- eventKeyName
+       [Control] <- eventModifier
+       liftIO $ do
+         t <- entryGetText entry
+         entrySetText entry (unwords $ init $ words t)
+         editableSetPosition entry (negate 1)
 
-evHandler cfg e (Key { Ev.eventKeyChar = Just c }) = do
-  (i,j) <- editableGetSelectionBounds e
-  editableDeleteText e i j
-  p <- editableInsertText e [c] =<< editableGetPosition e
-  t <- entryGetText e
-  case suggest (Config.histAcc cfg) t of
-   Nothing  -> do
-     editableSetPosition e p
-     return True
-   Just suf -> do
-     p' <- editableInsertText e suf p
-     editableSelectRegion e p' p
-     return True
-
-evHandler _ _ _ = return False
+  , do Just c <- fmap keyToChar eventKeyVal
+       liftIO $ do
+         (i,j) <- editableGetSelectionBounds entry
+         editableDeleteText entry i j
+         p <- editableInsertText entry [c] =<< editableGetPosition entry
+         t <- entryGetText entry
+         case suggest (Config.histAcc cfg) t of
+           Nothing  -> do
+             editableSetPosition entry p
+           Just suf -> do
+             p' <- editableInsertText entry suf p
+             editableSelectRegion entry p' p
+  ] -- end keyPressHandler
 
 
 mkCommand :: Config -> String -> Command
 mkCommand cfg = mk . words
    where
       mk :: [String] -> Command
-      mk ("=":es) = Calc (unwords es)
+      mk ("=":es)     = Calc (unwords es)
       mk ((':':s):ps) = maybe Pass
                               (\sc -> Run $ words $ subst (Config.sc_pattern sc) ps)
                               (Config.findShortcut s (Config.shortcuts cfg))
       mk cmd          = Run cmd
 
 
-
 entrySelectAll :: Entry -> IO ()
 entrySelectAll e = do
-  l <- length `fmap` entryGetText e
+  l <- Text.length `fmap` entryGetText e
   editableSelectRegion e 0 l
-
-
--- tryRunCommand :: String -> IO Bool
--- tryRunCommand cmdStr = do
---   let (cmd,argl) = break isSpace cmdStr
---   ps <- Path.getSearchPath
---   p  <- tryPaths (allPaths cmd ps)
---   case p of
---     Nothing -> return False
---     Just c  -> Sys.runCommand (c ++ argl) >> return True
 
 
 tryRunCommand :: [String] -> IO Bool
@@ -165,6 +167,7 @@ allPaths f ps =
     then [f]
     else map (`Path.combine` f) ps
 
+
 -- Return the first executable FilePath or Nothing
 -- if no given file path is executable.
 tryPaths :: [FilePath] -> IO (Maybe FilePath)
@@ -174,25 +177,3 @@ tryPaths (p:ps) = do
   ifM (doesFileExist p `andM` (getPermissions p >>= return . executable))
       (return $ Just p)
       (tryPaths ps)
-
-
-
--- NOT USED
--- editableSelectRegion has no effect when called from an editableChanged
--- signal handler.
-changeHandler :: IORef (ConnectId Entry) -> Dict -> Entry -> String -> Int -> IO Int
-changeHandler ref d e s p = do
-   putStrLn (s ++ " " ++ show p) >> return p
-   t <- entryGetText e
-   case suggest d t of
-      Nothing  -> return p
-      Just suf -> do
-	 id <- readIORef ref
-	 signalBlock id
-	 p' <- editableInsertText e suf p
-	 putStrLn (t ++ " + " ++ suf ++ "\t" ++ show p ++ "->" ++ show p')
-	 signalUnblock id
-	 stopInsertText id
-	 editableSelectRegion e p p'
-	 return p
-
