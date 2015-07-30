@@ -1,14 +1,14 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Main where
 
-import Data.Char        (isSpace)
 import Data.IORef
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Gdk.Events -- gtk2hs 0.10
+import Graphics.UI.Gtk.Gdk.Events      as Ev
 import System.Directory (doesFileExist, executable, getPermissions)
 
 import qualified System.FilePath.Posix as Path
 import qualified System.Process        as Sys
-import           System.Exit (ExitCode(..))
 
 import PrefixTree
 import Subst
@@ -51,6 +51,12 @@ main = do
   containerAdd btnBox btnCancel
   containerAdd btnBox btnGo
 
+  -- Set font size of text entry
+  do
+    d <- fontDescriptionNew
+    fontDescriptionSetSize d 14
+    widgetModifyFont entry (Just d)
+
   widgetGrabDefault btnGo
 
   onClicked btnCancel mainQuit
@@ -79,42 +85,38 @@ goAction cfg e = do
 
 
 evHandler :: Config -> Entry -> Event -> IO Bool
-evHandler _ _ (Key _ _ _ _ _ _ _ _ "Escape" _) = mainQuit >> return True
+evHandler _ _ (Key { Ev.eventKeyName = "Escape" }) =
+  mainQuit >> return True
 
 -- This should not be needed, but the default action does not seem to work.
-evHandler cfg e (Key _ _ _ _ _ _ _ _ "Return" _) = 
-   goAction cfg e >> return True
+evHandler cfg e (Key { Ev.eventKeyName = "Return" }) = 
+  goAction cfg e >> return True
 
-evHandler cfg e (Key _ _ _ mods _ _ _ _ _ (Just 'u'))
-   | Control `elem` mods = entrySetText e "" >> return True
+evHandler _ e (Key { Ev.eventModifier = mods, Ev.eventKeyChar = Just 'u' })
+  | Control `elem` mods = entrySetText e "" >> return True
 
-evHandler cfg e (Key _ _ _ mods _ _ _ _ _ (Just 'w'))
-   | Control `elem` mods = do
+evHandler _ e (Key { Ev.eventModifier = mods, Ev.eventKeyChar = Just 'w' })
+  | Control `elem` mods = do
       t <- entryGetText e
       entrySetText e (unwords $ init $ words t)
       editableSetPosition e (negate 1)
       return True
 
-evHandler cfg e (Key _ _ _ _ _ _ _ _ _ (Just c)) = do
-   (i,j) <- editableGetSelectionBounds e
-   editableDeleteText e i j
-   p <- editableGetPosition e
-   p <- editableInsertText e [c] p
-   t <- entryGetText e
-   case suggest (Config.histAcc cfg) t of
-      Nothing  -> do
-	 editableSetPosition e p
-	 return True
-      Just suf -> do
-	 p' <- editableInsertText e suf p
-	 editableSelectRegion e p' p
-	 return True
+evHandler cfg e (Key { Ev.eventKeyChar = Just c }) = do
+  (i,j) <- editableGetSelectionBounds e
+  editableDeleteText e i j
+  p <- editableInsertText e [c] =<< editableGetPosition e
+  t <- entryGetText e
+  case suggest (Config.histAcc cfg) t of
+   Nothing  -> do
+     editableSetPosition e p
+     return True
+   Just suf -> do
+     p' <- editableInsertText e suf p
+     editableSelectRegion e p' p
+     return True
 
-evHandler _ _ (Key _ _ _ _ _ _ _ v n mc)
-    = return False
---  putStrLn ("Key [" ++ show v ++ "]\t" ++ n) >> return False
-evHandler _ _ _
-    = return False
+evHandler _ _ _ = return False
 
 
 mkCommand :: Config -> String -> Command
