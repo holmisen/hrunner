@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
@@ -74,8 +73,8 @@ main = do
   on btnGo buttonActivated $ liftIO $ goAction config entry
   on window keyPressEvent $ tryEvent $ keyPressHandler config entry
 
-  onDestroy window mainQuit
-  
+  on window deleteEvent (liftIO mainQuit >> return True)
+
   widgetShowAll window
   mainGUI
 
@@ -85,7 +84,7 @@ goAction cfg e = do
    input <- entryGetText e
    case mkCommand cfg input of
       Pass    -> entrySelectAll e
-      Run cmd -> 
+      Run cmd ->
         ifM (tryRunCommand cmd)
           (Config.saveToHistory (unwords $ words input) >> mainQuit)
           (entrySelectAll e)
