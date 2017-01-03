@@ -63,7 +63,7 @@ mkShortcuts :: [Line] -> [Shortcut]
 mkShortcuts = map mkSC
    where
       mkSC s = let (sc, cmd) = break isSpace (dropWhile isSpace s)
-	       in SC sc (dropWhile isSpace cmd)
+               in SC sc (dropWhile isSpace cmd)
 
 
 findShortcut :: String -> [Shortcut] -> Maybe Shortcut

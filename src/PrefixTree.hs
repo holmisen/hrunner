@@ -1,4 +1,4 @@
-module PrefixTree 
+module PrefixTree
 (Dict
 ,suggest
 ,suggestAny
@@ -40,7 +40,6 @@ mkDict :: Int -> [String] -> Dict
 mkDict l ws
    | l < 1     = Words ws
    | otherwise = let gs = groupBy ((==) `on` head) (filter (not . null) ws)
-                     as = map (\ws -> (head $ head ws, 
-		                       mkDict (l-1) (map tail ws))) gs
+                     as = map (\ws -> (head $ head ws,
+                                       mkDict (l-1) (map tail ws))) gs
                  in Index $ Map.fromList as
-
