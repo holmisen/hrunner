@@ -1,4 +1,4 @@
-module Subst 
+module Subst
 (subst)
 where
 
@@ -16,29 +16,27 @@ import Data.List (intercalate)
 -- '@n'  substitute the n:th parameter converted to html
 -- '@+'  like '@@' but with '+' as separator
 subst :: String -> [String] -> String
-subst s ps = subst' s ps
-
-subst' ""         ps = ""
-subst' ('$':s)    ps = expand id     s ps
-subst' ('@':s)    ps = expand toHtml s ps
-subst' ('\\':c:s) ps = c : subst' s ps
-subst' (c:s)      ps = c : subst' s ps
+subst ""         ps = ""
+subst ('$':s)    ps = expand id     s ps
+subst ('@':s)    ps = expand toHtml s ps
+subst ('\\':c:s) ps = c : subst s ps
+subst (c:s)      ps = c : subst s ps
 
 
-expand f ('@':s') ps = f (unwords ps) ++ subst' s' ps
+expand :: (String -> String) -> String -> [String] -> String
+expand f ('@':s') ps = f (unwords ps) ++ subst s' ps
 expand f ('+':s') ps = f (intercalate "+" ps) ++ subst s' ps
 expand f (d:s')   ps
-   | isDigit d       = f (nth (digitToInt d) ps) ++ subst' s' ps
-expand _ (c:s')   ps = c : subst' s' ps
+   | isDigit d       = f (nth (digitToInt d) ps) ++ subst s' ps
+expand _ (c:s')   ps = c : subst s' ps
 expand _ s        ps = s
 
 
 nth :: Int -> [String] -> String
 nth n l
-   | n < 0     = error "nth: negative index"
-   | null l    = ""
-   | n == 0    = head l
-   | otherwise = nth (n-1) (tail l)
+   | n <= 0        = ""
+   | n <= length l = l !! (n-1)
+   | otherwise     = ""
 
 
 -- Convert a string to html string
