@@ -118,6 +118,9 @@ keyPressHandler cfg entry =
          editableSetPosition entry (negate 1)
 
   , do Just c <- fmap keyToChar eventKeyVal
+       -- This is necessary not to consume backspace:
+       guard (c /= '\b')
+
        liftIO $ do
          (i,j) <- editableGetSelectionBounds entry
          editableDeleteText entry i j
