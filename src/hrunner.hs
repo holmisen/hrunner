@@ -95,6 +95,7 @@ goAction cfg e = do
          entrySelectAll e
 
 
+keyPressHandler :: Config -> Entry -> EventM EKey ()
 keyPressHandler cfg entry =
   msum
   [ do "Escape" <- eventKeyName
