@@ -8,10 +8,11 @@ import Data.IORef
 import Data.Text (Text)
 import Graphics.UI.Gtk
 import System.Directory (doesFileExist, executable, getPermissions)
+import System.FilePath  ((</>))
 
-import qualified Data.Text             as Text
-import qualified System.FilePath.Posix as Path
-import qualified System.Process        as Sys
+import qualified Data.Text        as Text
+import qualified System.FilePath  as Path
+import qualified System.Process   as Sys
 
 import PrefixTree
 import Subst
@@ -24,11 +25,13 @@ import qualified Config
 data Command = Pass | Run [String] | Calc String
 
 
-helpText = text "Enter command to run.\n:\tfor shortcut.\n=\tfor expression evaluation."
+helpText = text $ concat
+   [ "Enter command to run.\n"
+   , ":\tfor shortcut.\n"
+   , "=\tfor expression evaluation."
+   ]
 
 
--- For older gtk, using String instead of Text, it should be possible
--- to make this code work by changing this to the identity function.
 text :: String -> Text
 text = Text.pack
 
@@ -67,7 +70,9 @@ main = do
     fontDescriptionSetSize d 14
     widgetModifyFont entry (Just d)
 
+  widgetSetCanDefault btnGo True
   widgetGrabDefault btnGo
+  entrySetActivatesDefault entry True
 
   on btnCancel buttonActivated $ liftIO mainQuit
   on btnGo buttonActivated $ liftIO $ goAction config entry
@@ -101,11 +106,6 @@ keyPressHandler cfg entry =
   [ do "Escape" <- eventKeyName
        liftIO mainQuit
 
-    -- This should be taken care of by the default button, but that
-    -- does not work. I do not know why.
-  , do "Return" <- eventKeyName
-       liftIO $ goAction cfg entry
-
   , do "u" <- eventKeyName
        [Control] <- eventModifier
        liftIO $ entrySetText entry (text "")
@@ -118,8 +118,8 @@ keyPressHandler cfg entry =
          editableSetPosition entry (negate 1)
 
   , do Just c <- fmap keyToChar eventKeyVal
-       -- This is necessary not to consume backspace:
-       guard (c /= '\b')
+       -- Ensure we don't consume backspace and return keys:
+       guard (c /= '\b' && c /= '\r')
 
        liftIO $ do
          (i,j) <- editableGetSelectionBounds entry
@@ -148,7 +148,7 @@ mkCommand cfg = mk . words
 
 entrySelectAll :: Entry -> IO ()
 entrySelectAll e = do
-  l <- Text.length `fmap` entryGetText e
+  l <- Text.length <$> entryGetText e
   editableSelectRegion e 0 l
 
 
@@ -168,7 +168,7 @@ allPaths :: FilePath -> [FilePath] -> [FilePath]
 allPaths f ps =
   if Path.isAbsolute f
     then [f]
-    else map (`Path.combine` f) ps
+    else [p </> f | p <- ps]
 
 
 -- Return the first executable FilePath or Nothing
@@ -177,6 +177,6 @@ tryPaths :: [FilePath] -> IO (Maybe FilePath)
 tryPaths []     = return Nothing
 tryPaths (p:ps) = do
   putStrLn ("Trying " ++ p)
-  ifM (doesFileExist p `andM` (getPermissions p >>= return . executable))
+  ifM (doesFileExist p `andM` (executable <$> getPermissions p))
       (return $ Just p)
       (tryPaths ps)
