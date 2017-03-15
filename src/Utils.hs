@@ -8,3 +8,8 @@ ifM p cons alt = do
 
 andM :: Monad m => m Bool -> m Bool -> m Bool
 andM l r = ifM l r (return False)
+
+
+rotateL :: [a] -> [a]
+rotateL []     = []
+rotateL (x:xs) = xs ++ [x]

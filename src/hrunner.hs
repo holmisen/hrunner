@@ -14,7 +14,7 @@ import qualified Data.Text        as Text
 import qualified System.FilePath  as Path
 import qualified System.Process   as Sys
 
-import PrefixTree
+import Completion
 import Subst
 import Utils
 
@@ -74,9 +74,12 @@ main = do
   widgetGrabDefault btnGo
   entrySetActivatesDefault entry True
 
+  -- Reference to list of completion suffixes
+  complRef <- newIORef []
+
   on btnCancel buttonActivated $ liftIO mainQuit
   on btnGo buttonActivated $ liftIO $ goAction config entry
-  on window keyPressEvent $ tryEvent $ keyPressHandler config entry
+  on window keyPressEvent $ tryEvent $ keyPressHandler config entry complRef
 
   on window deleteEvent (liftIO mainQuit >> return True)
 
@@ -100,22 +103,30 @@ goAction cfg e = do
          entrySelectAll e
 
 
-keyPressHandler :: Config -> Entry -> EventM EKey ()
-keyPressHandler cfg entry =
+keyPressHandler :: Config -> Entry -> IORef [String] -> EventM EKey ()
+keyPressHandler cfg entry complRef =
   msum
   [ do "Escape" <- eventKeyName
        liftIO mainQuit
 
   , do "u" <- eventKeyName
        [Control] <- eventModifier
+       liftIO $ writeIORef complRef []
        liftIO $ entrySetText entry (text "")
 
   , do "w" <- eventKeyName
        [Control] <- eventModifier
+       liftIO $ writeIORef complRef []
        liftIO $ do
          t <- entryGetText entry
          entrySetText entry (unwords $ init $ words t)
          editableSetPosition entry (negate 1)
+
+  , do Just '\t' <- fmap keyToChar eventKeyVal
+       liftIO $ do
+          modifyIORef complRef rotateL
+          suffixes <- readIORef complRef
+          suggestCompletion entry suffixes
 
   , do Just c <- fmap keyToChar eventKeyVal
        -- Ensure we don't consume backspace and return keys:
@@ -126,13 +137,28 @@ keyPressHandler cfg entry =
          editableDeleteText entry i j
          p <- editableInsertText entry [c] =<< editableGetPosition entry
          t <- entryGetText entry
-         case suggest (Config.histAcc cfg) t of
-           Nothing  -> do
+         let suffixes = getSuffixes (Config.histAcc cfg) t
+         writeIORef complRef suffixes
+         case suffixes of
+           []  -> do
              editableSetPosition entry p
-           Just suf -> do
+           suffixes@(suf:_) -> do
              p' <- editableInsertText entry suf p
              editableSelectRegion entry p' p
   ] -- end keyPressHandler
+
+
+suggestCompletion :: Entry -> [String] -> IO ()
+suggestCompletion entry suffixes = do
+   (i,j) <- editableGetSelectionBounds entry
+   editableDeleteText entry i j
+   case suffixes of
+      (suffix:_) -> do
+         p <- editableGetPosition entry
+         p' <- editableInsertText entry suffix p
+         editableSelectRegion entry p' p
+      _ ->
+         return ()
 
 
 mkCommand :: Config -> String -> Command

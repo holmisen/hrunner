@@ -14,7 +14,7 @@ import System.Directory      as Dir
 import System.FilePath.Posix as Path
 
 import Utils (ifM)
-import PrefixTree
+import Completion (Dict, makeDict)
 
 
 data Config = Cfg { history    :: [String]
@@ -52,7 +52,7 @@ getConfig = do
    contsHist   <- readOrCreateFile (Path.combine cfgHome "history")
    contsShorts <- readOrCreateFile (Path.combine cfgHome "shortcuts")
    return Cfg { history   = mkHist contsHist
-              , histAcc   = mkDict 2 (sort contsHist)
+              , histAcc   = makeDict contsHist
               , shortcuts = mkShortcuts contsShorts }
 
 
