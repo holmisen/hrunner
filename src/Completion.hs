@@ -14,7 +14,7 @@ data Dict = Dict [String] deriving Show
 
 
 makeDict :: [String] -> Dict
-makeDict = Dict . reverse. nub
+makeDict = Dict . nub . reverse
 
 
 getSuffixes :: Dict -> String -> [String]
