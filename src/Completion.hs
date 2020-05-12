@@ -6,7 +6,7 @@ module Completion
 where
 
 import Data.Maybe (catMaybes)
-import Data.List (stripPrefix, isPrefixOf, sort)
+import Data.List (stripPrefix, isPrefixOf, sort, nub, reverse)
 
 --------------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ data Dict = Dict [String] deriving Show
 
 
 makeDict :: [String] -> Dict
-makeDict = Dict . sortUniq
+makeDict = Dict . reverse. nub
 
 
 getSuffixes :: Dict -> String -> [String]

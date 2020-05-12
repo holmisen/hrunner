@@ -29,6 +29,7 @@ type Line = String
 
 
 appName = "hrunner"
+
 getAppUserDataDir = Dir.getAppUserDataDirectory appName
 
 
