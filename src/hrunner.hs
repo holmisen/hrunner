@@ -109,10 +109,22 @@ keyPressHandler cfg entry complRef =
   [ do "Escape" <- eventKeyName
        liftIO mainQuit
 
+  , do "a" <- eventKeyName
+       [Control] <- eventModifier
+       liftIO $ entrySelectAll entry
+
+  , do "c" <- eventKeyName
+       [Control] <- eventModifier
+       liftIO $ editableCopyClipboard entry
+
   , do "u" <- eventKeyName
        [Control] <- eventModifier
        liftIO $ writeIORef complRef []
        liftIO $ entrySetText entry (text "")
+
+  , do "v" <- eventKeyName
+       [Control] <- eventModifier
+       liftIO $ editablePasteClipboard entry
 
   , do "w" <- eventKeyName
        [Control] <- eventModifier
@@ -121,6 +133,10 @@ keyPressHandler cfg entry complRef =
          t <- entryGetText entry
          entrySetText entry (unwords $ init $ words t)
          editableSetPosition entry (negate 1)
+
+  , do "x" <- eventKeyName
+       [Control] <- eventModifier
+       liftIO $ editableCutClipboard entry
 
   , do Just '\t' <- fmap keyToChar eventKeyVal
        liftIO $ do
@@ -177,9 +193,7 @@ mkCommand cfg = mk . words
 
 
 entrySelectAll :: Entry -> IO ()
-entrySelectAll e = do
-  l <- Text.length <$> entryGetText e
-  editableSelectRegion e 0 l
+entrySelectAll e = editableSelectRegion e 0 (-1)
 
 
 tryRunCommand :: [String] -> IO Bool
