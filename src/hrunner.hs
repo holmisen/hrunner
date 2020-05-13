@@ -133,32 +133,36 @@ keyPressHandler cfg entry complRef =
        guard (c /= '\b' && c /= '\r')
 
        liftIO $ do
-         (i,j) <- editableGetSelectionBounds entry
-         editableDeleteText entry i j
-         p <- editableInsertText entry [c] =<< editableGetPosition entry
+         overwriteSelectedText entry [c]
          t <- entryGetText entry
          let suffixes = getSuffixes (Config.histAcc cfg) t
          writeIORef complRef suffixes
-         case suffixes of
-           []  -> do
-             editableSetPosition entry p
-           suffixes@(suf:_) -> do
-             p' <- editableInsertText entry suf p
-             editableSelectRegion entry p' p
+         suggestCompletion entry suffixes
   ] -- end keyPressHandler
+
+
+-- Insert text at current position, overwriting selection (if any)
+overwriteSelectedText :: Entry -> String -> IO ()
+overwriteSelectedText entry s = do
+  editableDeleteSelection entry
+  p <- editableGetPosition entry
+  q <- editableInsertText entry s p
+  editableSetPosition entry q
+
+
+swapSelectedText :: Entry -> String -> IO ()
+swapSelectedText entry s = do
+  editableDeleteSelection entry
+  p <- editableGetPosition entry
+  q <- editableInsertText entry s p
+  editableSelectRegion entry p q
 
 
 suggestCompletion :: Entry -> [String] -> IO ()
 suggestCompletion entry suffixes = do
-   (i,j) <- editableGetSelectionBounds entry
-   editableDeleteText entry i j
-   case suffixes of
-      (suffix:_) -> do
-         p <- editableGetPosition entry
-         p' <- editableInsertText entry suffix p
-         editableSelectRegion entry p' p
-      _ ->
-         return ()
+  case suffixes of
+    (s : _) -> swapSelectedText entry s
+    _       -> return ()
 
 
 mkCommand :: Config -> String -> Command
