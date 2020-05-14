@@ -171,7 +171,7 @@ swapSelectedText entry s = do
   editableDeleteSelection entry
   p <- editableGetPosition entry
   q <- editableInsertText entry s p
-  editableSelectRegion entry p q
+  editableSelectRegion entry q p
 
 
 suggestCompletion :: Entry -> [String] -> IO ()
